@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict, Optional
 
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.llms import CTransformers, HuggingFacePipeline
@@ -63,15 +63,10 @@ def get_gptq_llm(config: Dict[str, Any]) -> LLM:
 
 
 def get_llm(
-    config: Dict[str, Any],
+    config: dict[str, Any],
     *,
-    callback: Optional[Callable[[str], None]] = None,
+    callbacks: Optional[list[BaseCallbackHandler]] = None,
 ) -> LLM:
-    class CallbackHandler(BaseCallbackHandler):
-        def on_llm_new_token(self, token: str, **kwargs) -> None:
-            callback(token)
-
-    callbacks = [CallbackHandler()] if callback else None
     local_files_only = not config["download"]
     if config["llm"] == "ctransformers":
         config = {**config["ctransformers"]}

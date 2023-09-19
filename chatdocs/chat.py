@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional
 
+from langchain.callbacks.base import BaseCallbackHandler
 from rich import print
 from rich.markup import escape
 from rich.panel import Panel
@@ -11,8 +12,13 @@ def print_answer(text: str) -> None:
     print(f"[bright_cyan]{escape(text)}", end="", flush=True)
 
 
+class PrintCallback(BaseCallbackHandler):
+    def on_llm_new_token(self, token: str, **kwargs) -> None:
+        print_answer(token)
+
+
 def chat(config: Dict[str, Any], query: Optional[str] = None) -> None:
-    qa = get_retrieval_qa(config, callback=print_answer)
+    qa = get_retrieval_qa(config, callbacks=[PrintCallback])
 
     interactive = not query
     print()

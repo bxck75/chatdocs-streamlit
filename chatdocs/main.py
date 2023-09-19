@@ -58,7 +58,9 @@ def chat(
 
 @app.command()
 def ui(config: ConfigPath = None):
-    from .ui import ui
-
-    config = get_config(config)
-    ui(config=config)
+    import sys
+    from streamlit.web import cli as stcli
+    sys.argv = ["streamlit", "run", Path(__file__).parent / "ui.py"]
+    if config:
+        sys.argv.append(config)
+    sys.exit(stcli.main())

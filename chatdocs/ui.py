@@ -1,73 +1,100 @@
-import json
-import secrets
-from queue import Queue
-from threading import Thread
-from typing import Any, Dict
+# allow relative imports when running with streamlit
+from streamlit import runtime
+if runtime.exists() and not __package__:
+    from pathlib import Path
+    __package__ = Path(__file__).parent.name
 
-from quart import Quart, render_template, websocket
-from rich import print
-from rich.panel import Panel
+import argparse
+from typing import Union
 
+import streamlit as st
+from langchain.schema import (SystemMessage, HumanMessage, AIMessage)
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.callbacks.streamlit import StreamlitCallbackHandler
+
+from .config import get_config
 from .chains import get_retrieval_qa
 
 
-async def receive():
-    data = await websocket.receive()
-    return json.loads(data)
+def init_messages() -> None:
+    clear_button = st.sidebar.button("Clear Conversation", key="clear")
+    if clear_button or "messages" not in st.session_state:
+        st.session_state.messages = []
 
 
-async def send(data: Any):
-    data = json.dumps(data)
-    await websocket.send(data)
+def print_state_messages():
+    def find_role(message: Union[SystemMessage, HumanMessage, AIMessage]) -> str:
+        """
+        Identify role name from langchain.schema object.
+        """
+        if isinstance(message, SystemMessage):
+            return "system"
+        if isinstance(message, HumanMessage):
+            return "user"
+        if isinstance(message, AIMessage):
+            return "assistant"
+        raise TypeError("Unknown message type.")
+
+    for message in st.session_state.messages:
+        with st.chat_message(find_role(message)):
+            st.markdown(message.content)
 
 
-def ui(config: Dict[str, Any]) -> None:
-    q = Queue()
+@st.cache_data
+def load_config(config_path):
+    return get_config(config_path)
 
-    def callback(token: str) -> None:
-        q.put(token)
 
-    qa = get_retrieval_qa(config, callback=callback)
+@st.cache_resource
+def load_qa_chain(config):
+    print_callback = StreamingStdOutCallbackHandler()
+    st_callback = StreamlitCallbackHandler(st.container())
+    return get_retrieval_qa(config, callbacks=[print_callback, st_callback])
 
-    def worker(query: str) -> None:
-        res = qa(query)
-        q.put(res)
 
-    app = Quart(__name__, template_folder="data")
-    auth = secrets.token_hex() if config["auth"] else None
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('config_path', type=str, nargs='?',
+                    help='Custom path to a chatdocs.yml configuration file.')
+    args = parser.parse_args()
+    
+    st.set_page_config(
+        page_title="ChatDocs",
+        page_icon="📚"
+    )
+    st.title("ChatDocs")
+    st.sidebar.title("Options")
 
-    @app.get("/")
-    async def index():
-        return await render_template("index.html")
+    init_messages()
+    print_state_messages()
 
-    @app.websocket("/ws")
-    async def ws() -> None:
-        while True:
-            req = await receive()
-            id, query = req["id"], req["query"]
-            if auth and auth != req.get("auth"):
-                print("Authentication error.")
-                return
-            Thread(target=worker, daemon=True, args=(query,)).start()
+    config = load_config(args.config_path)
+    qa = load_qa_chain(config)
 
-            done = False
-            while not done:
-                data = q.get()
-                res = {"id": id}
-                if isinstance(data, str):
-                    res["chunk"] = data
+    if prompt := st.chat_input("Enter a query"):
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        st.session_state.messages.append(HumanMessage(content=prompt))
+
+        with st.spinner("LLM is typing ..."):
+            placeholder = st.empty()
+            full_response = ""
+            response = qa(prompt)
+
+            with st.chat_message("assistant"):
+                if isinstance(response, str):
+                    full_response += response
+                    placeholder.markdown(full_response)
                 else:
-                    res["result"] = data["result"]
-                    res["sources"] = sources = []
-                    for doc in data["source_documents"]:
-                        source, content = doc.metadata["source"], doc.page_content
-                        sources.append({"source": source, "content": content})
-                    done = True
+                    full_response = response["result"]
+                    placeholder.markdown(full_response)
+            st.session_state.messages.append(AIMessage(content=full_response))
 
-                await send(res)
-                q.task_done()
+            for doc in response["source_documents"]:
+                source, content = doc.metadata["source"], doc.page_content
+                with st.expander(label=source):
+                    st.markdown(content)
 
-    host, port = config["host"], config["port"]
-    if auth:
-        print(Panel(f"Visit [bright_blue]http://localhost:{port}?auth={auth}"))
-    app.run(host=host, port=port, use_reloader=False)
+
+if __name__ == "__main__":
+    main()
