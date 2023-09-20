@@ -78,5 +78,5 @@ def get_llm(
         config = {**config["huggingface"]}
         config["model_id"] = config.pop("model")
         config = merge(config, {"model_kwargs": {"local_files_only": local_files_only}})
-        llm = HuggingFacePipeline.from_model_id(task="text-generation", **config)
+        llm = HuggingFacePipeline.from_model_id(task="text-generation", callbacks=callbacks, **config)
     return llm

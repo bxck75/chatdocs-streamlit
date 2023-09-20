@@ -1,42 +1,96 @@
-# allow relative imports when running with streamlit
-from streamlit import runtime
-if runtime.exists() and not __package__:
-    from pathlib import Path
-    __package__ = Path(__file__).parent.name
-
 import argparse
-from typing import Union
+from typing import Any
+from uuid import UUID
+
+import langchain  # unused but needed to avoid circular import errors
+from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
+from langchain.callbacks import StreamingStdOutCallbackHandler
+from langchain.callbacks.base import BaseCallbackHandler
+from langchain.schema.output import LLMResult
 
 import streamlit as st
-from langchain.schema import (SystemMessage, HumanMessage, AIMessage)
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-from langchain.callbacks.streamlit import StreamlitCallbackHandler
+from streamlit.delta_generator import DeltaGenerator
+from streamlit import runtime
+
+# allow relative imports when running with streamlit
+if runtime.exists() and not __package__:
+    from pathlib import Path
+
+    __package__ = Path(__file__).parent.name
 
 from .config import get_config
 from .chains import get_retrieval_qa
 
 
-def init_messages() -> None:
+class StreamHandler(BaseCallbackHandler):
+    def __init__(self, container: DeltaGenerator, initial_text: str = ""):
+        self.container = container
+        self.text = initial_text
+        self.run_id_ignore_token = None
+
+    def on_llm_start(
+        self,
+        serialized: dict[str, Any],
+        prompts: list[str],
+        *,
+        run_id: UUID,
+        **kwargs: Any,
+    ) -> None:
+        # Workaround to prevent showing the rephrased question as output
+        if prompts[0].startswith("Human"):
+            self.run_id_ignore_token = run_id
+            return
+        self.status = self.container.status(
+            label="Thinking...", state="running", expanded=True
+        )
+        with self.status.chat_message("assistant"):
+            self.placeholder = st.empty()
+
+    def on_llm_new_token(self, token: str, *, run_id: UUID, **kwargs: Any) -> None:
+        if self.run_id_ignore_token == run_id:
+            return
+        self.text += token
+        self.placeholder.markdown(self.text)
+
+    def on_llm_end(self, response: LLMResult, *, run_id: UUID, **kwargs: Any) -> Any:
+        if self.run_id_ignore_token == run_id:
+            return
+        self.status.update(state="complete")
+
+
+class PrintRetrievalHandler(BaseCallbackHandler):
+    def __init__(self, container: DeltaGenerator):
+        self.container = container
+
+    def on_retriever_start(self, serialized: dict, query: str, **kwargs):
+        self.status = self.container.status(
+            label=f"**Context Retrieval:** {query}", state="running"
+        )
+        self.status.write(f"**Question:** {query}")
+
+    def on_retriever_end(self, documents, **kwargs):
+        for idx, doc in enumerate(documents):
+            source, content = doc.metadata["source"], doc.page_content
+            self.status.divider()
+            self.status.write(f"**Document {idx} from {source}**")
+            self.status.markdown(content)
+        self.status.update(state="complete")
+
+
+def init_messages(msgs: StreamlitChatMessageHistory) -> None:
     clear_button = st.sidebar.button("Clear Conversation", key="clear")
-    if clear_button or "messages" not in st.session_state:
-        st.session_state.messages = []
+    if clear_button or len(msgs.messages) == 0:
+        msgs.clear()
 
 
-def print_state_messages():
-    def find_role(message: Union[SystemMessage, HumanMessage, AIMessage]) -> str:
-        """
-        Identify role name from langchain.schema object.
-        """
-        if isinstance(message, SystemMessage):
-            return "system"
-        if isinstance(message, HumanMessage):
-            return "user"
-        if isinstance(message, AIMessage):
-            return "assistant"
-        raise TypeError("Unknown message type.")
+def print_state_messages(msgs: StreamlitChatMessageHistory):
+    roles = {
+        "human": "user",
+        "ai": "assistant",
+    }
 
-    for message in st.session_state.messages:
-        with st.chat_message(find_role(message)):
+    for message in msgs.messages:
+        with st.chat_message(roles[message.type]):
             st.markdown(message.content)
 
 
@@ -47,53 +101,44 @@ def load_config(config_path):
 
 @st.cache_resource
 def load_qa_chain(config):
-    print_callback = StreamingStdOutCallbackHandler()
-    st_callback = StreamlitCallbackHandler(st.container())
-    return get_retrieval_qa(config, callbacks=[print_callback, st_callback])
+    return get_retrieval_qa(config)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('config_path', type=str, nargs='?',
-                    help='Custom path to a chatdocs.yml configuration file.')
-    args = parser.parse_args()
-    
-    st.set_page_config(
-        page_title="ChatDocs",
-        page_icon="📚"
+    parser.add_argument(
+        "config_path",
+        type=str,
+        nargs="?",
+        help="Custom path to a chatdocs.yml configuration file.",
     )
+    args = parser.parse_args()
+
+    st.session_state["config_path"] = args.config_path
+
+    st.set_page_config(page_title="ChatDocs", page_icon="📚")
     st.title("ChatDocs")
     st.sidebar.title("Options")
 
-    init_messages()
-    print_state_messages()
+    msgs = StreamlitChatMessageHistory(key="messages")
+    init_messages(msgs)
+    print_state_messages(msgs)
 
-    config = load_config(args.config_path)
+    config = load_config(st.session_state["config_path"])
     qa = load_qa_chain(config)
 
     if prompt := st.chat_input("Enter a query"):
         with st.chat_message("user"):
             st.markdown(prompt)
-        st.session_state.messages.append(HumanMessage(content=prompt))
+        msgs.add_user_message(prompt)
 
-        with st.spinner("LLM is typing ..."):
-            placeholder = st.empty()
-            full_response = ""
-            response = qa(prompt)
-
-            with st.chat_message("assistant"):
-                if isinstance(response, str):
-                    full_response += response
-                    placeholder.markdown(full_response)
-                else:
-                    full_response = response["result"]
-                    placeholder.markdown(full_response)
-            st.session_state.messages.append(AIMessage(content=full_response))
-
-            for doc in response["source_documents"]:
-                source, content = doc.metadata["source"], doc.page_content
-                with st.expander(label=source):
-                    st.markdown(content)
+        retrieve_callback = PrintRetrievalHandler(st.container())
+        print_callback = StreamHandler(st.empty())
+        stdout_callback = StreamingStdOutCallbackHandler()
+        response = qa(
+            prompt, callbacks=[retrieve_callback, print_callback, stdout_callback]
+        )
+        msgs.add_ai_message(response["result"])
 
 
 if __name__ == "__main__":
