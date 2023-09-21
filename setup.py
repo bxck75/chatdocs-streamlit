@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open("README.md") as f:
     long_description = f.read()
@@ -15,7 +15,7 @@ setup(
     author_email="mv.ravindra007@gmail.com",
     url="https://github.com/marella/{}".format(name),
     license="MIT",
-    packages=[name, f"{name}.pages"],
+    packages=find_packages(where="."),
     package_data={name: ["data/chatdocs.yml"]},
     entry_points={
         "console_scripts": [
@@ -44,7 +44,7 @@ setup(
         "extract-msg>=0.41.0,<0.42.0",
         "pandoc>=2.3,<3.0.0",
         "pypandoc>=1.11,<2.0.0",
-        "pdfminer.six==20221105",
+        "nougat-ocr>=0.1.0",
         "unstructured>=0.6.0,<0.7.0",
         # Temporary fix for `rich`, `numpy` version conflicts.
         "argilla==1.8.0",
