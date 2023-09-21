@@ -60,6 +60,9 @@ def transform_embeddings(embeddings: pd.Series, dim_reduction: str, n_components
     elif dim_reduction == "TruncatedSVD":
         return TruncatedSVD(n_components).fit_transform(data)
     elif dim_reduction == "t-SNE":
+        # Suggestion from sklearn TSNE docs to reduce noise and speed up computation
+        if embedding_size > 50:
+            data = PCA(n_components=50).fit_transform(data)
         return TSNE(n_components).fit_transform(data)
     return None
 
