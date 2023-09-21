@@ -128,7 +128,6 @@ def main():
         labels = transform_labels(db_data["documents"])
         data = transform_embeddings(db_data["embeddings"], dim_reduction, n_components)
 
-        scatter = go.Scatter3d if n_components == 3 else go.Scatter
         scatter_kwargs = dict(
             x=data[:, 0],
             y=data[:, 1],
@@ -136,11 +135,14 @@ def main():
             text=labels,
             marker=dict(color=colors, size=sizes),
         )
-        if n_components == 3:
-            scatter_kwargs["z"] = data[:, 2]
+        scatter = None
+        if n_components == 2:
+            scatter = go.Scatter(**scatter_kwargs)
+        elif n_components == 3:
+            scatter = go.Scatter3d(z=data[:, 2], **scatter_kwargs)
 
         fig = go.Figure(
-            data=[scatter(**scatter_kwargs)],
+            data=[scatter],
             layout=go.Layout(paper_bgcolor=COLOR_PAPER_BG, plot_bgcolor=COLOR_PLOT_BG),
         )
         fig.update_layout(
