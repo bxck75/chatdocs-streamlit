@@ -60,7 +60,7 @@ def chat(
 def ui(config: ConfigPath = None):
     import sys
     from streamlit.web import cli as stcli
-    sys.argv = ["streamlit", "run", Path(__file__).parent / "ui.py"]
+    sys.argv = ["streamlit", "run", str(Path(__file__).parent / "ui.py")]
     if config:
         sys.argv.append(config)
     sys.exit(stcli.main())
