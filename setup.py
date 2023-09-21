@@ -15,7 +15,7 @@ setup(
     author_email="mv.ravindra007@gmail.com",
     url="https://github.com/marella/{}".format(name),
     license="MIT",
-    packages=[name],
+    packages=[name, f"{name}.pages"],
     package_data={name: ["data/chatdocs.yml"]},
     entry_points={
         "console_scripts": [
@@ -29,14 +29,17 @@ setup(
         "deepmerge>=1.1.0,<2.0.0",
         "InstructorEmbedding>=1.0.1,<2.0.0",
         "langchain>=0.0.295",
-        "streamlit>=1.26.0",
         "pydantic>=1.9,<2.0",
         "pyyaml>=6.0",
         "sentence-transformers>=2.2.2,<3.0.0",
+        "scikit-learn>=1.3.0",
         "tqdm>=4.64.1,<5.0.0",
         "transformers>=4.32.0",
         "typer>=0.9.0",
         "typing-extensions>=4.4.0,<5.0.0",
+        # UI
+        "streamlit>=1.26.0",
+        "plotly>=5.17.0",
         # Document Loaders
         "extract-msg>=0.41.0,<0.42.0",
         "pandoc>=2.3,<3.0.0",
