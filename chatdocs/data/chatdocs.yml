@@ -16,12 +16,6 @@ huggingface:
   pipeline_kwargs:
     max_new_tokens: 256
 
-gptq:
-  model: TheBloke/Wizard-Vicuna-7B-Uncensored-GPTQ
-  model_file: model.safetensors
-  pipeline_kwargs:
-    max_new_tokens: 256
-
 download: false
 
 host: localhost
