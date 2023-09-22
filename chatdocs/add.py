@@ -7,7 +7,6 @@ from tqdm import tqdm
 from langchain.document_loaders import (
     CSVLoader,
     EverNoteLoader,
-    # PDFMinerLoader,
     TextLoader,
     UnstructuredEmailLoader,
     UnstructuredEPubLoader,
@@ -59,7 +58,6 @@ LOADER_MAPPING = {
     ".html": (UnstructuredHTMLLoader, {}),
     ".md": (UnstructuredMarkdownLoader, {}),
     ".odt": (UnstructuredODTLoader, {}),
-    # ".pdf": (PDFMinerLoader, {}),
     ".pdf": (NougatPDFLoader, {}),
     ".ppt": (UnstructuredPowerPointLoader, {}),
     ".pptx": (UnstructuredPowerPointLoader, {}),
@@ -90,24 +88,19 @@ def load_documents(source_dir: str, ignored_files: List[str] = []) -> List[Docum
     filtered_files = [
         file_path for file_path in all_files if file_path not in ignored_files
     ]
-    results = []
-    with tqdm(
-        total=len(filtered_files), desc="Loading new documents", ncols=80
-    ) as pbar:
-        for docs in map(load_single_document, filtered_files):
-            results.extend(docs)
-            pbar.update()
 
-    # with Pool(processes=os.cpu_count()) as pool:
-    #     results = []
-    #     with tqdm(
-    #         total=len(filtered_files), desc="Loading new documents", ncols=80
-    #     ) as pbar:
-    #         for i, docs in enumerate(
-    #             pool.imap_unordered(load_single_document, filtered_files)
-    #         ):
-    #             results.extend(docs)
-    #             pbar.update()
+    with Pool(processes=os.cpu_count()) as pool:
+        results = []
+        with tqdm(
+            total=len(filtered_files),
+            desc="Loading new documents",
+            ncols=80,
+            position=0,
+            leave=True,
+        ) as pbar:
+            for docs in pool.imap_unordered(load_single_document, filtered_files):
+                results.extend(docs)
+                pbar.update()
 
     return results
 

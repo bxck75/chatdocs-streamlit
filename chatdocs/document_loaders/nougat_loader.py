@@ -14,9 +14,16 @@ from chatdocs.logger import logger
 class NougatPDFLoader(BasePDFLoader):
     """Load `PDF` files using Nougat (https://facebookresearch.github.io/nougat/)."""
 
-    def __init__(self, file_path: str, *, headers: Optional[dict] = None) -> None:
+    def __init__(
+        self,
+        file_path: str,
+        *,
+        num_workers: Optional[int] = 0,
+        headers: Optional[dict] = None,
+    ) -> None:
         """Initialize with file path."""
         super().__init__(file_path, headers=headers)
+        self.num_workers = num_workers
 
         try:
             from nougat import NougatModel
@@ -73,41 +80,39 @@ class NougatPDFLoader(BasePDFLoader):
 
         dataloader = DataLoader(
             dataset,
-            num_workers=0,
+            num_workers=self.num_workers,
             batch_size=self.batch_size,
             shuffle=False,
             collate_fn=LazyDataset.ignore_none_collate,
         )
 
-        predictions = []
-        page_num = 0
-        for sample, is_last_page in tqdm(dataloader):
+        for page_num, (sample, is_last_page) in enumerate(
+            tqdm(
+                dataloader,
+                desc="Processing file {dataset.name} with {dataset.size} pages",
+                ncols=80,
+                position=0,
+                leave=True,
+            )
+        ):
             model_output = self.model.inference(
                 image_tensors=sample, early_stopping=True
             )
             # check if model output is faulty
-            for j, output in enumerate(model_output["predictions"]):
-                if page_num == 0:
-                    logger.info(
-                        "Processing file %s with %i pages"
-                        % (dataset.name, dataset.size)
-                    )
-                page_num += 1
+            for i, output in enumerate(model_output["predictions"]):
                 if output.strip() == "[MISSING_PAGE_POST]":
                     # uncaught repetitions -- most likely empty page
-                    predictions.append(f"\n\n[MISSING_PAGE_EMPTY:{page_num}]\n\n")
-                elif model_output["repeats"][j] is not None:
-                    if model_output["repeats"][j] > 0:
+                    logger.warning(f"[MISSING_PAGE_EMPTY:{page_num}]")
+                elif model_output["repeats"][i] is not None:
+                    if model_output["repeats"][i] > 0:
                         # If we end up here, it means the output is most likely not complete and was truncated.
                         logger.warning(f"Skipping page {page_num} due to repetitions.")
-                        predictions.append(f"\n\n[MISSING_PAGE_FAIL:{page_num}]\n\n")
                     else:
                         # If we end up here, it means the document page is too different from the training domain.
                         # This can happen e.g. for cover pages.
-                        predictions.append(f"\n\n[MISSING_PAGE_EMPTY:{j+1}]\n\n")
+                        logger.warning(f"[MISSING_PAGE_EMPTY:{i+1}]")
                 else:
                     output = markdown_compatible(output)
                     output = re.sub(r"\n{3,}", "\n\n", output).strip()
-                    predictions.append(output)
                     metadata = {"source": self.file_path, "page": page_num}
                     yield Document(page_content=output, metadata=metadata)
