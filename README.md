@@ -43,11 +43,13 @@ Chat with your documents offline using AI. No data leaves your system. Internet 
 
 ## Installation
 
-Install the tool using:
+### CPU-only setup
+Run `pip install https://github.com/Vidminas/chatdocs-streamlit`
 
-```sh
-pip install chatdocs
-```
+### Setup with CUDA
+1. Install PyTorch with CUDA enabled by following the instructions [here](https://pytorch.org/get-started/locally/).
+2. `pip install ctransformers[cuda]`
+3. `pip install https://github.com/Vidminas/chatdocs-streamlit`
 
 Download the AI models using:
 
@@ -73,7 +75,7 @@ Chat with your documents using:
 chatdocs ui
 ```
 
-Open http://localhost:5000 in your browser to access the web UI.
+Open http://localhost:8501 in your browser to access the web UI.
 
 It also has a nice command-line interface:
 
@@ -143,11 +145,6 @@ huggingface:
 
 > **Note:** When you add a new model for the first time, run `chatdocs download` to download the model before using it.
 
-To use GPTQ models with 🤗 Transformers, install the necessary packages using:
-
-```sh
-pip install chatdocs[gptq]
-```
 
 ## GPU
 
@@ -161,7 +158,6 @@ embeddings:
     device: cuda
 ```
 
-You may have to reinstall PyTorch with CUDA enabled by following the instructions [here](https://pytorch.org/get-started/locally/).
 
 ### CTransformers
 
@@ -173,12 +169,6 @@ ctransformers:
     gpu_layers: 50
 ```
 
-You may have to install the CUDA libraries using:
-
-```sh
-pip install ctransformers[cuda]
-```
-
 ### 🤗 Transformers
 
 To enable GPU (CUDA) support for the 🤗 Transformers model, add the following to your `chatdocs.yml`:
@@ -187,8 +177,6 @@ To enable GPU (CUDA) support for the 🤗 Transformers model, add the following 
 huggingface:
   device: 0
 ```
-
-You may have to reinstall PyTorch with CUDA enabled by following the instructions [here](https://pytorch.org/get-started/locally/).
 
 ## License
 
