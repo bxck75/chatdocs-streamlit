@@ -16,7 +16,6 @@ Chat with your documents offline using AI. No data leaves your system. Internet 
 
 - Supports GGML/GGUF models via [CTransformers](https://github.com/marella/ctransformers)
 - Supports 🤗 Transformers models
-- Supports GPTQ models
 - Web UI
 - GPU support
 - Highly configurable via `chatdocs.yml`
@@ -44,14 +43,14 @@ Chat with your documents offline using AI. No data leaves your system. Internet 
 ## Installation
 
 ### CPU-only setup
-Run `pip install https://github.com/Vidminas/chatdocs-streamlit`
+Run `pip install git+https://github.com/Vidminas/chatdocs-streamlit.git`
 
 ### Setup with CUDA
 1. Install PyTorch with CUDA enabled by following the instructions [here](https://pytorch.org/get-started/locally/).
 2. `pip install ctransformers[cuda]`
-3. `pip install https://github.com/Vidminas/chatdocs-streamlit`
+3. `pip install git+https://github.com/Vidminas/chatdocs-streamlit.git`
 
-If pip takes too long to resolve dependency versions, you can also use `pip install https://github.com/Vidminas/chatdocs-streamlit --use-deprecated=legacy-resolver`. This may result in some dependency version conflicts, but should be fine to ignore (some libraries just haven't updated the supported version bounds for their dependencies).
+If pip takes too long to resolve dependency versions, you can also use `pip install git+https://github.com/Vidminas/chatdocs-streamlit.git --use-deprecated=legacy-resolver`. This may result in some dependency version conflicts, but should be fine to ignore (some libraries just haven't updated the supported version bounds for their dependencies).
 
 Download the AI models using:
 
