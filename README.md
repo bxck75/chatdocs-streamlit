@@ -1,8 +1,8 @@
-# [ChatDocs](https://github.com/marella/chatdocs) [![PyPI](https://img.shields.io/pypi/v/chatdocs)](https://pypi.org/project/chatdocs/) [![tests](https://github.com/marella/chatdocs/actions/workflows/tests.yml/badge.svg)](https://github.com/marella/chatdocs/actions/workflows/tests.yml)
+# [ChatDocs-Streamlit](https://github.com/Vidminas/chatdocs-streamlit)
+
+A fork of [ChatDocs](https://github.com/marella/chatdocs) [![PyPI](https://img.shields.io/pypi/v/chatdocs)](https://pypi.org/project/chatdocs/)
 
 Chat with your documents offline using AI. No data leaves your system. Internet connection is only required to install the tool and download the AI models. It is based on [PrivateGPT](https://github.com/imartinez/privateGPT) but has more features.
-
-![Web UI](https://github.com/marella/chatdocs/raw/main/docs/demo.png)
 
 **Contents**
 
@@ -93,9 +93,9 @@ chatdocs chat
 
 ## Configuration
 
-All the configuration options can be changed using the `chatdocs.yml` config file. Create a `chatdocs.yml` file in some directory and run all commands from that directory. For reference, see the default [`chatdocs.yml`](https://github.com/marella/chatdocs/blob/main/chatdocs/data/chatdocs.yml) file.
+All the configuration options can be changed using the `chatdocs.yml` config file. Create a `chatdocs.yml` file in some directory and run all commands from that directory. For reference, see the default [`chatdocs.yml`](https://github.com/Vidminas/chatdocs-streamlit/blob/main/chatdocs/data/chatdocs.yml) file.
 
-You don't have to copy the entire file, just add the config options you want to change as it will be merged with the default config. For example, see [`tests/fixtures/chatdocs.yml`](https://github.com/marella/chatdocs/blob/main/tests/fixtures/chatdocs.yml) which changes only some of the config options.
+You don't have to copy the entire file, just add the config options you want to change as it will be merged with the default config. For example, see [`tests/fixtures/chatdocs.yml`](https://github.com/Vidminas/chatdocs-streamlit/blob/main/tests/fixtures/chatdocs.yml) which changes only some of the config options.
 
 ### Embeddings
 
@@ -108,44 +108,42 @@ embeddings:
 
 > **Note:** When you change the embeddings model, delete the `db` directory and add documents again.
 
-### CTransformers
+### LLMs
 
-To change the CTransformers (GGML/GGUF) model, add and change the following in your `chatdocs.yml`:
+You can configure multiple LLMs to use for chatdocs.
+The command line interface uses the first one from the list.
+The UI provides radio buttons to select which one to use.
+
+Each model in the list must specify which framework to use: either CTransformers (GGML/GGUF) or 🤗 Transformers.
+To add more models, use the following template in your `chatdocs.yml`:
 
 ```yml
-ctransformers:
-  model: TheBloke/Wizard-Vicuna-7B-Uncensored-GGML
-  model_file: Wizard-Vicuna-7B-Uncensored.ggmlv3.q4_0.bin
-  model_type: llama
+llms:
+  - model_framework: ctransformers
+    model: TheBloke/orca_mini_3B-GGML
+    model_file: orca-mini-3b.ggmlv3.q4_0.bin
+    model_type: llama
+    config:
+      context_length: 1024
+      max_new_tokens: 256
+  - model_framework: huggingface
+    model: TheBloke/Wizard-Vicuna-7B-Uncensored-HF
+    pipeline_kwargs:
+      max_new_tokens: 256
 ```
+
+CTransformers requires specifying `model_type` (between llama, gpt2, gpt3, falcon, ...).
 
 > **Note:** When you add a new model for the first time, run `chatdocs download` to download the model before using it.
 
-You can also use an existing local model file:
+You can also use an existing local model file, for example:
 
 ```yml
-ctransformers:
-  model: /path/to/ggml-model.bin
-  model_type: llama
+llms:
+  - model_framework: ctransformers
+    model: /path/to/ggml-model.bin
+    model_type: llama
 ```
-
-### 🤗 Transformers
-
-To use 🤗 Transformers models, add the following to your `chatdocs.yml`:
-
-```yml
-llm: huggingface
-```
-
-To change the 🤗 Transformers model, add and change the following in your `chatdocs.yml`:
-
-```yml
-huggingface:
-  model: TheBloke/Wizard-Vicuna-7B-Uncensored-HF
-```
-
-> **Note:** When you add a new model for the first time, run `chatdocs download` to download the model before using it.
-
 
 ## GPU
 
@@ -162,12 +160,14 @@ embeddings:
 
 ### CTransformers
 
-To enable GPU (CUDA) support for the CTransformers (GGML/GGUF) model, add the following to your `chatdocs.yml`:
+To enable GPU (CUDA) support for a CTransformers (GGML/GGUF) model, add the following to your `chatdocs.yml`:
 
 ```yml
-ctransformers:
-  config:
-    gpu_layers: 50
+llms:
+  - model_framework: ctransformers
+  # ...
+    config:
+      gpu_layers: 50
 ```
 
 ### 🤗 Transformers
@@ -175,8 +175,10 @@ ctransformers:
 To enable GPU (CUDA) support for the 🤗 Transformers model, add the following to your `chatdocs.yml`:
 
 ```yml
-huggingface:
-  device: 0
+llms:
+  - model_framework: huggingface
+  # ...
+    device: 0
 ```
 
 ## License

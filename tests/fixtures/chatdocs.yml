@@ -1,9 +1,10 @@
 embeddings:
   model: all-MiniLM-L6-v2
 
-ctransformers:
-  model: marella/gpt-2-ggml
-  model_file: ggml-model.bin
-  model_type: gpt2
-  config:
-    seed: 10
+llms:
+  - model_framework: ctransformers
+    model: marella/gpt-2-ggml
+    model_file: ggml-model.bin
+    model_type: gpt2
+    config:
+      seed: 10

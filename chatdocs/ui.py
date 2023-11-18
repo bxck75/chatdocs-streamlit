@@ -55,6 +55,9 @@ class StreamHandler(BaseCallbackHandler):
     def on_llm_end(self, response: LLMResult, *, run_id: UUID, **kwargs: Any) -> Any:
         if self.run_id_ignore_token == run_id:
             return
+        if not self.text: # for models that produce all output at once at the end
+            self.text = response.flatten()[0].generations[0][0].text
+            self.placeholder.markdown(self.text)
         self.status.update(state="complete")
 
 
@@ -95,8 +98,8 @@ def print_state_messages(msgs: StreamlitChatMessageHistory):
 
 
 @st.cache_resource
-def load_qa_chain(config):
-    return get_retrieval_qa(config)
+def load_qa_chain(config, selected_llm):
+    return get_retrieval_qa(config, selected_llm_index=selected_llm)
 
 
 def main():
@@ -120,7 +123,8 @@ def main():
     print_state_messages(msgs)
 
     config = load_config()
-    qa = load_qa_chain(config)
+    selected_llm = st.sidebar.radio("LLM", range(len(config["llms"])), format_func=lambda idx: config["llms"][idx]["model"])
+    qa = load_qa_chain(config, selected_llm)
 
     if prompt := st.chat_input("Enter a query"):
         with st.chat_message("user"):
