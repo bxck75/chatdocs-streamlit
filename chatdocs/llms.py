@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
 from langchain.callbacks.base import BaseCallbackHandler
-from langchain.llms import CTransformers, HuggingFacePipeline
+from langchain.llms import CTransformers, HuggingFacePipeline, OpenAI
 from langchain.llms.base import LLM
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
@@ -23,7 +23,9 @@ def get_llm(
     if model_framework == "ctransformers":
         config = merge(config, {"config": {"local_files_only": local_files_only}})
         llm = CTransformers(callbacks=callbacks, **config)
-    else:
+    elif model_framework == "openai":
+        llm = OpenAI(**config)
+    elif model_framework == "huggingface":
         config = merge(config, {"model_kwargs": {"local_files_only": local_files_only}})
 
         tokenizer = AutoTokenizer.from_pretrained(config["model"])
@@ -36,5 +38,7 @@ def get_llm(
             **config["pipeline_kwargs"],
         )
         llm = HuggingFacePipeline(pipeline=pipe)
+    else:
+        raise ValueError(f"Unsupported model framework: {model_framework}")
         
     return llm

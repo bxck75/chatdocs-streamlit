@@ -145,6 +145,15 @@ llms:
     model_type: llama
 ```
 
+Finally, if you wish to compare results with an OpenAI model, you can add:
+
+```yml
+  - model_framework: openai
+    model: gpt-3.5-turbo-0613
+    openai_api_key: YOUR-KEY-HERE (starting with sk-)
+```
+This is for testing purposes -- if you use the OpenAI models, your documents and chat data will be sent over the API, unlike with local LLMs.
+
 ## GPU
 
 ### Embeddings
