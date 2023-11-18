@@ -1,11 +1,12 @@
 from typing import Any, Dict, Optional
 
 from langchain.callbacks.base import BaseCallbackHandler
+from langchain.schema.messages import AIMessage, HumanMessage
 from rich import print
 from rich.markup import escape
 from rich.panel import Panel
 
-from .chains import get_retrieval_qa
+from .chains import make_conversation_chain
 
 
 def print_answer(text: str) -> None:
@@ -18,7 +19,8 @@ class PrintCallback(BaseCallbackHandler):
 
 
 def chat(config: Dict[str, Any], query: Optional[str] = None) -> None:
-    qa = get_retrieval_qa(config, callbacks=[PrintCallback])
+    llm = make_conversation_chain(config)
+    messages = []
 
     interactive = not query
     print()
@@ -37,9 +39,10 @@ def chat(config: Dict[str, Any], query: Optional[str] = None) -> None:
             break
         print("[bold]A:", end="", flush=True)
 
-        res = qa(query)
-        if config["llm"] != "ctransformers":
-            print_answer(res["result"])
+        res = llm(
+            { "question": query, "chat_history": messages },
+            callbacks=[PrintCallback],
+        )
 
         print()
         for doc in res["source_documents"]:
@@ -49,7 +52,12 @@ def chat(config: Dict[str, Any], query: Optional[str] = None) -> None:
                     f"[bright_blue]{escape(source)}[/bright_blue]\n\n{escape(content)}"
                 )
             )
+        
         print()
-
+        print_answer(res["answer"])
+        
         if not interactive:
             break
+
+        messages.append(HumanMessage(content=query))
+        messages.append(AIMessage(content=res["answer"]))

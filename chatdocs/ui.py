@@ -6,6 +6,7 @@ import langchain  # unused but needed to avoid circular import errors
 from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.callbacks.base import BaseCallbackHandler
+from langchain.chains.conversational_retrieval.prompts import CONDENSE_QUESTION_PROMPT
 from langchain.schema.output import LLMResult
 
 import streamlit as st
@@ -18,7 +19,7 @@ if runtime.exists() and not __package__:
 
     __package__ = Path(__file__).parent.name
 
-from .chains import get_retrieval_qa
+from .chains import make_conversation_chain
 from .st_utils import load_config
 
 
@@ -37,7 +38,7 @@ class StreamHandler(BaseCallbackHandler):
         **kwargs: Any,
     ) -> None:
         # Workaround to prevent showing the rephrased question as output
-        if prompts[0].startswith("Human"):
+        if prompts[0][:20] == CONDENSE_QUESTION_PROMPT.template[:20]:
             self.run_id_ignore_token = run_id
             return
         self.status = self.container.status(
@@ -98,8 +99,8 @@ def print_state_messages(msgs: StreamlitChatMessageHistory):
 
 
 @st.cache_resource
-def load_qa_chain(config, selected_llm):
-    return get_retrieval_qa(config, selected_llm_index=selected_llm)
+def load_llm(config, selected_llm):
+    return make_conversation_chain(config, selected_llm_index=selected_llm)
 
 
 def main():
@@ -124,7 +125,7 @@ def main():
 
     config = load_config()
     selected_llm = st.sidebar.radio("LLM", range(len(config["llms"])), format_func=lambda idx: config["llms"][idx]["model"])
-    qa = load_qa_chain(config, selected_llm)
+    llm = load_llm(config, selected_llm)
 
     if prompt := st.chat_input("Enter a query"):
         with st.chat_message("user"):
@@ -134,10 +135,11 @@ def main():
         retrieve_callback = PrintRetrievalHandler(st.container())
         print_callback = StreamHandler(st.empty())
         stdout_callback = StreamingStdOutCallbackHandler()
-        response = qa(
-            prompt, callbacks=[retrieve_callback, print_callback, stdout_callback]
+        response = llm(
+            { "question": prompt, "chat_history": msgs.messages },
+            callbacks=[retrieve_callback, print_callback, stdout_callback],
         )
-        msgs.add_ai_message(response["result"])
+        msgs.add_ai_message(response["answer"])
 
 
 if __name__ == "__main__":

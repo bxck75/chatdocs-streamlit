@@ -1,24 +1,21 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from langchain.callbacks.base import BaseCallbackHandler
-from langchain.chains import RetrievalQA
+from langchain.chains import ConversationalRetrievalChain
 
 from .llms import get_llm
 from .vectorstores import get_vectorstore
 
 
-def get_retrieval_qa(
+def make_conversation_chain(
     config: Dict[str, Any],
     *,
     selected_llm_index: int = 0,
-    callbacks: Optional[list[BaseCallbackHandler]] = None,
-) -> RetrievalQA:
+) -> ConversationalRetrievalChain:
     db = get_vectorstore(config)
     retriever = db.as_retriever(**config["retriever"])
-    llm = get_llm(config, selected_llm_index=selected_llm_index, callbacks=callbacks)
-    return RetrievalQA.from_chain_type(
+    llm = get_llm(config, selected_llm_index=selected_llm_index)
+    return ConversationalRetrievalChain.from_llm(
         llm=llm,
-        chain_type="stuff",
         retriever=retriever,
         return_source_documents=True,
     )

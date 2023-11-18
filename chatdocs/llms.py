@@ -1,6 +1,5 @@
-from typing import Any, Optional
+from typing import Any
 
-from langchain.callbacks.base import BaseCallbackHandler
 from langchain.llms import CTransformers, HuggingFacePipeline, OpenAI
 from langchain.llms.base import LLM
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
@@ -12,7 +11,6 @@ def get_llm(
     config: dict[str, Any],
     *,
     selected_llm_index: int = 0,
-    callbacks: Optional[list[BaseCallbackHandler]] = None,
 ) -> LLM:
     local_files_only = not config["download"]
 
@@ -22,7 +20,7 @@ def get_llm(
 
     if model_framework == "ctransformers":
         config = merge(config, {"config": {"local_files_only": local_files_only}})
-        llm = CTransformers(callbacks=callbacks, **config)
+        llm = CTransformers(**config)
     elif model_framework == "openai":
         llm = OpenAI(**config)
     elif model_framework == "huggingface":
@@ -33,8 +31,9 @@ def get_llm(
         if not tokenizer.pad_token_id:
             tokenizer.pad_token_id = model.config.eos_token_id
         pipe = pipeline(
-            "text-generation", model=model, tokenizer=tokenizer,
-            callbacks=callbacks,
+            "text-generation",
+            model=model,
+            tokenizer=tokenizer,
             **config["pipeline_kwargs"],
         )
         llm = HuggingFacePipeline(pipeline=pipe)
