@@ -34,7 +34,7 @@ class NougatPDFLoader(BasePDFLoader):
                 "`nougat` package not found, please install it with "
                 "`pip install nougat-ocr`"
             )
-        checkpoint = get_checkpoint("nougat", download=True)
+        checkpoint = get_checkpoint(download=True)
         self.model = NougatModel.from_pretrained(checkpoint)
 
         if torch.cuda.is_available():
