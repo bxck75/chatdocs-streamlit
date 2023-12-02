@@ -21,8 +21,8 @@ port: 5000
 auth: false
 
 chroma:
+  is_persistent: true
   persist_directory: db
-  chroma_db_impl: duckdb+parquet
   anonymized_telemetry: false
 
 retriever:

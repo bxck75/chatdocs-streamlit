@@ -23,23 +23,23 @@ setup(
         ],
     },
     install_requires=[
-        "accelerate>=0.20.3",
-        "chromadb>=0.3.0,<0.4.0",
+        "accelerate>=0.25.0",
+        "chromadb>=0.4.16",
         "ctransformers>=0.2.25,<0.3.0",
         "deepmerge>=1.1.0,<2.0.0",
         "InstructorEmbedding>=1.0.1,<2.0.0",
-        "langchain>=0.0.295",
+        "langchain>=0.0.344",
         "openai",
         "pydantic>=1.9,<2.0",
         "pyyaml>=6.0",
         "sentence-transformers>=2.2.2,<3.0.0",
-        "scikit-learn>=1.3.0",
+        "scikit-learn>=1.3.2",
         "tqdm>=4.64.1,<5.0.0",
-        "transformers>=4.32.0",
+        "transformers>=4.35.0",
         "typer>=0.9.0",
         "typing-extensions>=4.4.0,<5.0.0",
         # UI
-        "streamlit>=1.26.0",
+        "streamlit>=1.29.0",
         "plotly>=5.17.0",
         # Document Loaders
         "extract-msg>=0.41.0,<0.42.0",
@@ -47,8 +47,11 @@ setup(
         "pypandoc>=1.11,<2.0.0",
         "nougat-ocr==0.1.9", # needs specific version to avoid ERROR:root:daemonic processes are not allowed to have children
         "unstructured>=0.6.0,<0.7.0",
-        # Temporary fix for `rich`, `numpy` version conflicts.
-        "argilla==1.8.0",
+        # Temporary fix for version conflicts.
+        "lightning==2.1.2",
+        "numpy==1.26.0",
+        # Fix for https://github.com/GrahamDumpleton/wrapt/issues/196 dependency from fastapi from chromadb
+        "wrapt>=1.14.0",
     ],
     extras_require={
         "tests": [
