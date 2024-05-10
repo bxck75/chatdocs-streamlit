@@ -3,7 +3,7 @@ from typing import Any
 from uuid import UUID
 
 import langchain  # unused but needed to avoid circular import errors
-from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
+from langchain_community.chat_message_histories import StreamlitChatMessageHistory
 from langchain.callbacks import StreamingStdOutCallbackHandler
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chains.conversational_retrieval.prompts import CONDENSE_QUESTION_PROMPT
