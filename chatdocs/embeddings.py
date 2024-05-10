@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from langchain.embeddings import HuggingFaceInstructEmbeddings, HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceInstructEmbeddings, HuggingFaceEmbeddings
 from langchain.embeddings.base import Embeddings
 
 
