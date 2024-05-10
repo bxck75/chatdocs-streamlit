@@ -4,8 +4,8 @@ from uuid import UUID
 
 import langchain  # unused but needed to avoid circular import errors
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
-from langchain.callbacks import StreamingStdOutCallbackHandler
-from langchain.callbacks.base import BaseCallbackHandler
+from langchain_core.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain_core.callbacks.callbacks.base import BaseCallbackHandler
 from langchain.chains.conversational_retrieval.prompts import CONDENSE_QUESTION_PROMPT
 from langchain.schema.output import LLMResult
 
