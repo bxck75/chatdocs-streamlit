@@ -3,12 +3,27 @@ embeddings:
 
 llms:
   - model_framework: huggingface
+    model: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+    pipeline_kwargs:
+      max_new_tokens: 256
+  - model_framework: huggingface
+    model: gpt2-medium
+    pipeline_kwargs:
+      max_new_tokens: 256
+  - model_framework: huggingface
     model: cerebras/Cerebras-GPT-111M
     pipeline_kwargs:
       max_new_tokens: 256
   - model_framework: ctransformers
     model: TheBloke/orca_mini_3B-GGML
     model_file: orca-mini-3b.ggmlv3.q4_0.bin
+    model_type: llama
+    config:
+      context_length: 1024
+      max_new_tokens: 256
+  - model_framework: ctransformers
+    model: ravenscroftj/CodeGen-2B-multi-ggml-quant
+    model_file:  codegen-2B-multi-ggml-4bit-quant_q4_0.bin
     model_type: llama
     config:
       context_length: 1024
@@ -28,3 +43,4 @@ chroma:
 retriever:
   search_kwargs:
     k: 4
+
