@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 from chromadb.config import Settings
 from langchain.docstore.document import Document
-from langchain.vectorstores.chroma import Chroma
+from langchain_community.vectorstores import Chroma
 
 from .embeddings import get_embeddings
 
