@@ -32,7 +32,7 @@ setup(
         "openai",
         "pydantic>=1.9,<2.0",
         "pyyaml>=6.0",
-        "sentence-transformers>=2.2.2,<3.0.0",
+        "sentence-transformers==2.2.2",
         "scikit-learn>=1.3.2",
         "tqdm>=4.64.1,<5.0.0",
         "transformers>=4.35.0",
